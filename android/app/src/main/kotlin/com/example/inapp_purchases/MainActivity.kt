@@ -1,4 +1,4 @@
-package com.example.inapp_purchases
+package me.timohtey.inapp-purchase
 
 import io.flutter.embedding.android.FlutterActivity
 

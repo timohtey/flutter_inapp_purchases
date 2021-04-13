@@ -1,5 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.inapp_purchases">
+    package="me.timohtey.inapp-purchase">
+  <uses-permission android:name="com.android.vending.BILLING"/>
    <application
         android:label="inapp_purchases"
         android:icon="@mipmap/ic_launcher">
