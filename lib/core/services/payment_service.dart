@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_inapp_purchase/flutter_inapp_purchase.dart';
+import 'package:inapp_purchases/core/repository/inapp_purchase_repository.dart';
+import 'package:inapp_purchases/http_client.dart';
 
 class PaymentService {
   /// We want singelton object of ``PaymentService`` so create private constructor
@@ -84,15 +86,15 @@ class PaymentService {
   void _getPastPurchases() async {
     List<PurchasedItem> purchasedItems =
         await FlutterInappPurchase.instance.getAvailablePurchases();
-    print('purchase items: $purchasedItems');
+
     for (var purchasedItem in purchasedItems) {
-      bool isValid = true;
+      bool isValid = false;
 
       if (Platform.isAndroid) {
         // if your app missed finishTransaction due to network or crash issue
         // finish transactins
         if (purchasedItem.isAcknowledgedAndroid) {
-          // isValid = await _verifyPurchase(purchasedItem);
+          isValid = await _verifyPurchase(purchasedItem);
           if (isValid) {
             FlutterInappPurchase.instance.finishTransaction(purchasedItem);
             _isProUser = true;
@@ -141,9 +143,8 @@ class PaymentService {
   Future<void> _handlePurchaseUpdateAndroid(PurchasedItem purchasedItem) async {
     switch (purchasedItem.purchaseStateAndroid) {
       case PurchaseState.purchased:
-        if (!purchasedItem.isAcknowledgedAndroid) {
+        if (!purchasedItem.isAcknowledgedAndroid)
           await _verifyAndFinishTransaction(purchasedItem);
-        }
         break;
       default:
         _callErrorListeners("Something went wrong");
@@ -162,22 +163,15 @@ class PaymentService {
   /// Call API of your back end to verify the reciept
   /// back end has to call billing server's API to verify the purchase token
   _verifyAndFinishTransaction(PurchasedItem purchasedItem) async {
-    bool isValid = true;
-    try {
-      // Call API
-      // isValid = await _verifyPurchase(purchasedItem);
-    } on Exception {
-      _callErrorListeners("Something went wrong");
-      return;
-    }
+    bool isValid = false;
+
+    isValid = await _verifyPurchase(purchasedItem);
 
     if (isValid) {
       FlutterInappPurchase.instance.finishTransaction(purchasedItem);
       _isProUser = true;
       // save in sharedPreference here
       _callProStatusChangedListeners();
-    } else {
-      _callErrorListeners("Varification failed");
     }
   }
 
@@ -213,5 +207,19 @@ class PaymentService {
     _errorListeners.forEach((Function callback) {
       callback(error);
     });
+  }
+
+  Future<bool> _verifyPurchase(PurchasedItem purchasedItem) async {
+    final httpClient = HttpClient();
+    final inAppPurchaseRepository = InAppPurchaseRepository(
+      dio: httpClient.getClient(),
+    );
+    final response = await inAppPurchaseRepository.verifyPurchase(
+      purchasedItem,
+    );
+
+    if (response['error'] != null) _callErrorListeners(response['error']);
+
+    return response['isVerified'];
   }
 }

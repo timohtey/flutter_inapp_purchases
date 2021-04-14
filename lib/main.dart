@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:inapp_purchases/payment_screen.dart';
+import 'package:inapp_purchases/screens/payment_screen.dart';
 
 void main() {
   runApp(MyApp());
