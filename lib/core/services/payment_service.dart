@@ -88,23 +88,13 @@ class PaymentService {
         await FlutterInappPurchase.instance.getAvailablePurchases();
 
     for (var purchasedItem in purchasedItems) {
-      bool isValid = false;
+      final response = await _verifyPurchase(purchasedItem);
+      bool isValid = response['isVerified'];
+      _isProUser = response['isProUser'];
+      if (response['error'] != null) _callErrorListeners(response['error']);
 
-      if (Platform.isAndroid) {
-        // if your app missed finishTransaction due to network or crash issue
-        // finish transactins
-        if (purchasedItem.isAcknowledgedAndroid) {
-          isValid = await _verifyPurchase(purchasedItem);
-          if (isValid) {
-            FlutterInappPurchase.instance.finishTransaction(purchasedItem);
-            _isProUser = true;
-            _callProStatusChangedListeners();
-          }
-        } else {
-          _isProUser = true;
-          _callProStatusChangedListeners();
-        }
-      }
+      if (isValid)
+        FlutterInappPurchase.instance.finishTransaction(purchasedItem);
     }
 
     _pastPurchases = [];
@@ -159,18 +149,27 @@ class PaymentService {
     }
   }
 
+  Future<Map<String, dynamic>> _verifyPurchase(PurchasedItem purchasedItem) {
+    final httpClient = HttpClient();
+    final inAppPurchaseRepository = InAppPurchaseRepository(
+      dio: httpClient.getClient(),
+    );
+    return inAppPurchaseRepository.verifyPurchase(
+      purchasedItem,
+    );
+  }
+
   /// Call this method when status of purchase is success
   /// Call API of your back end to verify the reciept
   /// back end has to call billing server's API to verify the purchase token
   _verifyAndFinishTransaction(PurchasedItem purchasedItem) async {
-    bool isValid = false;
-
-    isValid = await _verifyPurchase(purchasedItem);
+    final response = await _verifyPurchase(purchasedItem);
+    bool isValid = response['isVerified'];
+    _isProUser = response['isProUser'];
+    if (response['error'] != null) _callErrorListeners(response['error']);
 
     if (isValid) {
       FlutterInappPurchase.instance.finishTransaction(purchasedItem);
-      _isProUser = true;
-      // save in sharedPreference here
       _callProStatusChangedListeners();
     }
   }
@@ -195,7 +194,7 @@ class PaymentService {
     _errorListeners.remove(callback);
   }
 
-  /// Call this method to notify all the subsctibers of _proStatusChangedListeners
+  /// Call this method to notify all the subscribers of _proStatusChangedListeners
   void _callProStatusChangedListeners() {
     _proStatusChangedListeners.forEach((Function callback) {
       callback();
@@ -207,19 +206,5 @@ class PaymentService {
     _errorListeners.forEach((Function callback) {
       callback(error);
     });
-  }
-
-  Future<bool> _verifyPurchase(PurchasedItem purchasedItem) async {
-    final httpClient = HttpClient();
-    final inAppPurchaseRepository = InAppPurchaseRepository(
-      dio: httpClient.getClient(),
-    );
-    final response = await inAppPurchaseRepository.verifyPurchase(
-      purchasedItem,
-    );
-
-    if (response['error'] != null) _callErrorListeners(response['error']);
-
-    return response['isVerified'];
   }
 }

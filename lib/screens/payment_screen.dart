@@ -33,13 +33,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
       _loading = false;
       _purchasing = false;
     });
-    showAlertDialog(
-      context,
-      title: 'Successfully Subscribed',
-      body: 'You are all set! You may now access the additional features.',
-      continueText: 'Ok',
-      onContinue: () => Navigator.of(context).pop(),
-    );
   }
 
   void _errorOnPurchase(String error) {

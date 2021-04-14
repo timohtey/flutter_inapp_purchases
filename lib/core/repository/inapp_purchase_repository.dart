@@ -13,22 +13,24 @@ class InAppPurchaseRepository {
     final Map<String, dynamic> response = Map<String, dynamic>();
     response['isVerified'] = false;
 
-    await dio
-        .post(
-          '/purchases/${purchasedItem.productId}/platforms/$platform/verify',
-          data: {
-            "purchase": {
-              "transactionId": purchasedItem.transactionId,
-              "transactionDate": purchasedItem.transactionDate.toString(),
-              "transactionReceipt": purchasedItem.transactionReceipt,
-              "orderId": purchasedItem.orderId,
-            }
-          },
-        )
-        .then((result) => response['isVerified'] = true)
-        .catchError((error) {
-          response['error'] = error.response.data;
-        });
+    await dio.post(
+      '/purchases/${purchasedItem.productId}/platforms/$platform/verify',
+      data: {
+        "purchase": {
+          "transactionId": purchasedItem.transactionId,
+          "transactionDate": purchasedItem.transactionDate.toString(),
+          "transactionReceipt": purchasedItem.transactionReceipt,
+          "orderId": purchasedItem.orderId,
+        }
+      },
+    ).then((Response result) {
+      final purchasedProducts = result.data['data'];
+      response['isProUser'] = purchasedProducts.isNotEmpty;
+      response['isVerified'] = true;
+    }).catchError((error) {
+      print(error);
+      response['error'] = error.response.data;
+    });
 
     return response;
   }
