@@ -93,8 +93,10 @@ class PaymentService {
       _isProUser = response['isProUser'];
       if (response['error'] != null) _callErrorListeners(response['error']);
 
-      if (isValid)
+      if (isValid) {
         FlutterInappPurchase.instance.finishTransaction(purchasedItem);
+        _callProStatusChangedListeners();
+      }
     }
 
     _pastPurchases = [];
@@ -149,13 +151,19 @@ class PaymentService {
     }
   }
 
-  Future<Map<String, dynamic>> _verifyPurchase(PurchasedItem purchasedItem) {
+  Future<Map<String, dynamic>> _verifyPurchase(
+    PurchasedItem purchasedItem,
+  ) async {
     final httpClient = HttpClient();
     final inAppPurchaseRepository = InAppPurchaseRepository(
       dio: httpClient.getClient(),
     );
+    final products = await FlutterInappPurchase.instance.getSubscriptions(
+      [purchasedItem.productId],
+    );
     return inAppPurchaseRepository.verifyPurchase(
       purchasedItem,
+      products.first,
     );
   }
 

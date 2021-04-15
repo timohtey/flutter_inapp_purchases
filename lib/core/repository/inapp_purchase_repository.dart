@@ -8,7 +8,9 @@ class InAppPurchaseRepository {
   InAppPurchaseRepository({this.dio});
 
   Future<Map<String, dynamic>> verifyPurchase(
-      PurchasedItem purchasedItem) async {
+    PurchasedItem purchasedItem,
+    IAPItem product,
+  ) async {
     final platform = Platform.isIOS ? 'ios' : 'android';
     final Map<String, dynamic> response = Map<String, dynamic>();
     response['isVerified'] = false;
@@ -17,10 +19,11 @@ class InAppPurchaseRepository {
       '/purchases/${purchasedItem.productId}/platforms/$platform/verify',
       data: {
         "purchase": {
+          "price": product.price,
+          "frequency": product.subscriptionPeriodUnitIOS,
           "transactionId": purchasedItem.transactionId,
-          "transactionDate": purchasedItem.transactionDate.toString(),
           "transactionReceipt": purchasedItem.transactionReceipt,
-          "orderId": purchasedItem.orderId,
+          "isSubscription": "true",
         }
       },
     ).then((Response result) {

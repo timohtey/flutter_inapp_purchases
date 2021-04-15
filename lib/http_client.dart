@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 
 class HttpClient {
   Dio _dio;
-  String _baseUrl = 'https://0270deebeefe.ngrok.io';
+  String _baseUrl = 'https://90315e3a727a.ngrok.io';
 
   HttpClient() {
     _dio = new Dio();
